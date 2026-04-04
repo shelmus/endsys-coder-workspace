@@ -1,0 +1,16 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.backup
+*.tfvars
+crash.log
+
+# Secrets
+*.pem
+*.key
+kubeconfig
+
+# OS
+.DS_Store
+Thumbs.db
