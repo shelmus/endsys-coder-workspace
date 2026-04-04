@@ -61,7 +61,7 @@ RUN npm install -g @google/gemini-cli
 # Bitwarden Secrets Manager CLI
 RUN BWS_VERSION="1.0.0" \
     && curl -fsSLo /tmp/bws.zip \
-    "https://github.com/bitwarden/sdk-internal/releases/download/bws-v${BWS_VERSION}/bws-x86_64-unknown-linux-gnu-${BWS_VERSION}.zip" \
+    "https://github.com/bitwarden/sdk-sm/releases/download/bws-v${BWS_VERSION}/bws-x86_64-unknown-linux-gnu-${BWS_VERSION}.zip" \
     && unzip -o /tmp/bws.zip -d /usr/local/bin \
     && chmod +x /usr/local/bin/bws \
     && rm /tmp/bws.zip
