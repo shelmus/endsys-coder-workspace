@@ -84,8 +84,10 @@ RUN curl -fsSLo /usr/local/bin/yq \
 RUN curl -fsSL https://github.com/derailed/k9s/releases/download/v${K9S_VERSION}/k9s_Linux_amd64.tar.gz \
     | tar xz -C /usr/local/bin k9s
 
-# Create coder user
-RUN useradd -m -s /bin/zsh -u 1000 -G sudo coder \
+# Create coder user (remove default ubuntu user that occupies UID 1000)
+RUN userdel -r ubuntu 2>/dev/null || true \
+    && groupadd -f sudo \
+    && useradd -m -s /bin/zsh -u 1000 -G sudo coder \
     && echo "coder ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/coder \
     && chmod 0440 /etc/sudoers.d/coder
 
