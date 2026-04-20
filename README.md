@@ -1,67 +1,89 @@
 # endsys-coder-workspace
 
-Coder workspace template for Kubernetes with code-server, Claude Code, Gemini CLI, and Bitwarden Secrets Manager for secret provisioning.
+Coder workspace template for Kubernetes with `code-server`, Codex CLI, Claude Code, Gemini CLI, and Bitwarden Secrets Manager provisioning.
 
-## Tools Included
+## What This Template Creates
 
-- **code-server** — VS Code in the browser
-- **Claude Code** — Anthropic CLI agent (authenticate via `claude login`)
-- **Gemini CLI** — Google AI CLI agent (authenticate via `gemini` first-run)
-- **bws** — Bitwarden Secrets Manager CLI
-- **git**, **kubectl**, **helm**, **k9s**, **jq**, **yq**, **ripgrep**, **fd**, **fzf**, **tmux**, **zsh** + Oh My Zsh
+This repo defines a complete Coder template:
 
-## How It Works
+- A Kubernetes-backed Coder workspace pod
+- A persistent `/home/coder` volume for user state and auth caches
+- A `coder_script` startup step that provisions secrets and starts `code-server`
+- A Coder app named `VS Code` that points at the bundled `code-server` instance
 
-On workspace start, `startup.sh` uses a Bitwarden Secrets Manager machine account access token to fetch:
+## Included Tooling
 
-| Secret | BWS Secret Value | Destination |
+- `code-server` for browser-based VS Code
+- `codex` for OpenAI Codex CLI
+- `claude` for Claude Code
+- `gemini` for Gemini CLI
+- `bws` for Bitwarden Secrets Manager
+- `git`, `kubectl`, `helm`, `k9s`, `jq`, `yq`, `ripgrep`, `fd`, `fzf`, `tmux`, `zsh`, and Oh My Zsh
+
+The AI CLIs are version-pinned in `Dockerfile` through build args so workspace image builds stay reproducible.
+
+## Workspace Startup Flow
+
+When a workspace starts, Coder runs `startup.sh` through `coder_script.workspace_setup`. That script:
+
+1. Uses `BWS_ACCESS_TOKEN` to authenticate to Bitwarden Secrets Manager
+2. Retrieves the SSH private key and kubeconfig secrets by ID
+3. Validates the secret payloads before installing them
+4. Starts `code-server` on port `13337`
+
+Provisioned files:
+
+| Secret | Destination | Validation |
 |---|---|---|
-| SSH private key | Full private key text | `~/.ssh/id_ed25519` |
-| Kubeconfig | Full kubeconfig YAML | `~/.kube/config` |
+| SSH private key | `~/.ssh/id_ed25519` | `ssh-keygen -y` must succeed |
+| Kubeconfig | `~/.kube/config` | `kubectl config view` must succeed |
 
-Claude Code and Gemini CLI authenticate via browser OAuth on first use. Tokens persist on the home volume PVC across workspace restarts.
+If Bitwarden returns empty or malformed data, workspace startup fails fast instead of leaving the workspace half-configured.
+
+## Persistent State
+
+The home PVC mounted at `/home/coder` persists user state across workspace restarts, including:
+
+- shell history and dotfiles
+- Git config and SSH config
+- Claude Code auth state
+- Gemini CLI auth state
+- Codex CLI auth state, typically under `~/.codex/auth.json`
+
+Treat Codex auth cache like a password. Do not commit it, paste it into tickets, or copy it into shared chat.
 
 ## Prerequisites
 
-- Coder instance running on Kubernetes
-- Container image pushed to a registry (e.g., `ghcr.io/shelmus/endsys-coder-workspace:latest`)
+- Coder running on Kubernetes
+- Access to a container registry for the workspace image
 - [Bitwarden Secrets Manager](https://bitwarden.com/help/secrets-manager-overview/) with a machine account and access token
-- Secrets created in BWS for SSH key and kubeconfig
-- Claude Max subscription (for Claude Code)
-- Google AI Pro/Ultra subscription (for Gemini CLI)
+- Bitwarden secrets for the SSH private key and kubeconfig
+- ChatGPT or OpenAI API access for Codex CLI
+- Claude subscription or organization access for Claude Code
+- Google account or organization access for Gemini CLI
 
-## Bitwarden Secrets Manager Setup
+## Bitwarden Setup
 
-1. In Bitwarden, enable **Secrets Manager** for your organization
-2. Create a **project** (e.g., `coder-workspace`)
-3. Create **secrets** in the project:
-   - `ssh-private-key` — paste your full SSH private key as the value
-   - `kubeconfig` — paste your full kubeconfig YAML as the value
-4. Create a **machine account**, grant it read access to the project
-5. Generate an **access token** for the machine account
+1. Enable **Secrets Manager** for the Bitwarden organization.
+2. Create a project such as `coder-workspace`.
+3. Add these secrets to that project:
+   - `ssh-private-key`: the full private key contents
+   - `kubeconfig`: the full kubeconfig YAML
+4. Create a machine account and grant it read access to the project.
+5. Generate the machine account access token.
 
-## First Login
+## Build And Publish The Workspace Image
 
-After creating the workspace, open a terminal and run:
-
-```bash
-# Claude Code — opens browser OAuth flow
-claude login
-
-# Gemini CLI — opens browser OAuth flow on first run
-gemini
-```
-
-These only need to be done once — tokens are cached on the persistent home volume.
-
-## Build & Push Image
+Build and push the image you want the Coder template to use:
 
 ```bash
 docker build -t ghcr.io/shelmus/endsys-coder-workspace:latest .
 docker push ghcr.io/shelmus/endsys-coder-workspace:latest
 ```
 
-## Deploy Template
+If you publish to a different registry or tag, pass that image through the `workspace_image` template parameter when creating or updating workspaces.
+
+## Push The Coder Template
 
 ```bash
 coder templates push endsys-workspace --directory .
@@ -69,13 +91,66 @@ coder templates push endsys-workspace --directory .
 
 ## Template Parameters
 
-When creating a workspace, you'll be prompted for:
-
 | Parameter | Description |
 |---|---|
-| `namespace` | Kubernetes namespace (default: `coder`) |
-| `home_volume_size` | PVC size in GiB (10/20/50) |
-| `cpu_limit` / `memory_limit` | Resource limits |
-| `bws_access_token` | Bitwarden Secrets Manager machine account access token |
-| `bws_ssh_key_id` | UUID of the BWS secret containing the SSH private key |
-| `bws_kubeconfig_id` | UUID of the BWS secret containing the kubeconfig |
+| `namespace` | Kubernetes namespace for the workspace pod |
+| `workspace_image` | Full container image reference for the workspace pod |
+| `home_volume_size` | PVC size in GiB |
+| `cpu_limit` / `memory_limit` | Pod resource limits |
+| `bws_access_token` | Bitwarden machine account access token |
+| `bws_ssh_key_id` | Bitwarden secret ID for the SSH private key |
+| `bws_kubeconfig_id` | Bitwarden secret ID for the kubeconfig |
+
+## First Login In A Coder Workspace
+
+After the workspace starts, open the Coder terminal and sign in to the tools you want to use:
+
+```bash
+# Codex CLI: browser login on a normal workspace
+codex
+
+# Codex CLI: preferred for headless or remote login flows
+codex login --device-auth
+
+# Claude Code
+claude login
+
+# Gemini CLI
+gemini
+```
+
+Codex supports both ChatGPT sign-in and API-key sign-in. In a typical interactive Coder workspace, ChatGPT login is the default path. For automated or policy-controlled environments, use API-key auth instead.
+
+## Template Maintenance
+
+Terraform provider versions are pinned in `main.tf`, and `.terraform.lock.hcl` is intended to be committed. To refresh the lockfile after a provider upgrade:
+
+```bash
+terraform init -backend=false
+```
+
+This repo also includes CI for Coder template maintenance:
+
+- `.github/workflows/validate.yml` validates Terraform, shell syntax, and the container build
+- `.github/workflows/build.yml` publishes the workspace image on `main`
+
+## Smoke Test Checklist
+
+Run these after pushing a new image or template update:
+
+```bash
+codex --version
+claude --version
+gemini --version
+bws --version
+kubectl version --client
+code-server --version
+```
+
+Then validate the Coder-specific behavior:
+
+1. Push the template and create or update a workspace.
+2. Confirm the `Workspace Setup` script completes successfully.
+3. Confirm the `VS Code` app healthcheck passes.
+4. Verify SSH and kubeconfig files are present in the workspace.
+5. Restart the workspace and confirm CLI auth state still exists under `/home/coder`.

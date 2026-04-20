@@ -1,10 +1,14 @@
 terraform {
+  required_version = ">= 1.6.0"
+
   required_providers {
     coder = {
-      source = "coder/coder"
+      source  = "coder/coder"
+      version = "~> 2.15.0"
     }
     kubernetes = {
-      source = "hashicorp/kubernetes"
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.34"
     }
   }
 }
@@ -33,6 +37,15 @@ data "coder_parameter" "namespace" {
   type         = "string"
   default      = "coder"
   mutable      = false
+}
+
+data "coder_parameter" "workspace_image" {
+  name         = "workspace_image"
+  display_name = "Workspace Image"
+  description  = "Container image for the Coder workspace pod"
+  type         = "string"
+  default      = "ghcr.io/shelmus/endsys-coder-workspace:latest"
+  mutable      = true
 }
 
 data "coder_parameter" "home_volume_size" {
@@ -313,7 +326,7 @@ resource "kubernetes_pod" "workspace" {
 
     container {
       name  = "dev"
-      image = "ghcr.io/shelmus/endsys-coder-workspace:latest"
+      image = data.coder_parameter.workspace_image.value
 
       command = ["sh", "-c", coder_agent.dev.init_script]
 

@@ -5,6 +5,10 @@ ARG KUBECTL_VERSION=1.32.3
 ARG HELM_VERSION=3.17.3
 ARG YQ_VERSION=4.45.1
 ARG K9S_VERSION=0.50.6
+ARG CLAUDE_CODE_VERSION=1.0.117
+ARG GEMINI_CLI_VERSION=0.3.3
+ARG CODEX_VERSION=0.28.0
+ARG BWS_VERSION=1.0.0
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV LANG=en_US.UTF-8
@@ -53,14 +57,16 @@ RUN curl -fsSL https://deb.nodesource.com/setup_${NODE_VERSION}.x | bash - \
 RUN curl -fsSL https://code-server.dev/install.sh | sh
 
 # Claude Code CLI
-RUN npm install -g @anthropic-ai/claude-code
+RUN npm install -g @anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}
 
 # Gemini CLI
-RUN npm install -g @google/gemini-cli
+RUN npm install -g @google/gemini-cli@${GEMINI_CLI_VERSION}
+
+# Codex CLI
+RUN npm install -g @openai/codex@${CODEX_VERSION}
 
 # Bitwarden Secrets Manager CLI
-RUN BWS_VERSION="1.0.0" \
-    && curl -fsSLo /tmp/bws.zip \
+RUN curl -fsSLo /tmp/bws.zip \
     "https://github.com/bitwarden/sdk-sm/releases/download/bws-v${BWS_VERSION}/bws-x86_64-unknown-linux-gnu-${BWS_VERSION}.zip" \
     && unzip -o /tmp/bws.zip -d /usr/local/bin \
     && chmod +x /usr/local/bin/bws \

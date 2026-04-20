@@ -1,0 +1,51 @@
+name: Validate Template
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/**
+      - .terraform.lock.hcl
+      - .gitignore
+      - Dockerfile
+      - README.md
+      - main.tf
+      - startup.sh
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/**
+      - .terraform.lock.hcl
+      - .gitignore
+      - Dockerfile
+      - README.md
+      - main.tf
+      - startup.sh
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.12.1
+
+      - name: Terraform fmt
+        run: terraform fmt -check -diff
+
+      - name: Terraform init
+        run: terraform init -backend=false -lockfile=readonly
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Validate startup script
+        run: bash -n startup.sh
+
+      - name: Build container image
+        run: docker build --tag endsys-coder-workspace:test .
