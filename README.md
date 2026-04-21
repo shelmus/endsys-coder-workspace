@@ -77,11 +77,11 @@ Treat Codex auth cache like a password. Do not commit it, paste it into tickets,
 Build and push the image you want the Coder template to use:
 
 ```bash
-docker build -t ghcr.io/shelmus/endsys-coder-workspace:latest .
-docker push ghcr.io/shelmus/endsys-coder-workspace:latest
+docker build -t ghcr.io/shelmus/endsys-coder-workspace:v20260421 .
+docker push ghcr.io/shelmus/endsys-coder-workspace:v20260421
 ```
 
-If you publish to a different registry or tag, pass that image through the `workspace_image` template parameter when creating or updating workspaces.
+The default `workspace_image` template parameter points at `ghcr.io/shelmus/endsys-coder-workspace:v20260421`. If you publish to a different registry or newer tag, pass that image through the `workspace_image` template parameter when creating or updating workspaces.
 
 ## Push The Coder Template
 

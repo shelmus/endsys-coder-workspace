@@ -44,7 +44,7 @@ data "coder_parameter" "workspace_image" {
   display_name = "Workspace Image"
   description  = "Container image for the Coder workspace pod"
   type         = "string"
-  default      = "ghcr.io/shelmus/endsys-coder-workspace:latest"
+  default      = "ghcr.io/shelmus/endsys-coder-workspace:v20260421"
   mutable      = true
 }
 
