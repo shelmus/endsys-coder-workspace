@@ -19,6 +19,12 @@ provider "kubernetes" {
   config_path = null # Uses Coder's service account
 }
 
+locals {
+  default_workspace_image  = "ghcr.io/shelmus/endsys-coder-workspace:v20260421"
+  workspace_image_override = trimspace(data.coder_parameter.workspace_image_override.value)
+  workspace_image          = local.workspace_image_override != "" ? local.workspace_image_override : local.default_workspace_image
+}
+
 # ---------------------------------------------------------------------------
 # Data sources
 # ---------------------------------------------------------------------------
@@ -39,12 +45,12 @@ data "coder_parameter" "namespace" {
   mutable      = false
 }
 
-data "coder_parameter" "workspace_image" {
-  name         = "workspace_image"
-  display_name = "Workspace Image"
-  description  = "Container image for the Coder workspace pod"
+data "coder_parameter" "workspace_image_override" {
+  name         = "workspace_image_override"
+  display_name = "Workspace Image Override"
+  description  = "Optional full container image reference. Leave empty to use the pinned default image."
   type         = "string"
-  default      = "ghcr.io/shelmus/endsys-coder-workspace:v20260421"
+  default      = ""
   mutable      = true
 }
 
@@ -326,7 +332,7 @@ resource "kubernetes_pod" "workspace" {
 
     container {
       name              = "dev"
-      image             = data.coder_parameter.workspace_image.value
+      image             = local.workspace_image
       image_pull_policy = "Always"
 
       command = ["sh", "-c", coder_agent.dev.init_script]

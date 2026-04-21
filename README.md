@@ -81,7 +81,7 @@ docker build -t ghcr.io/shelmus/endsys-coder-workspace:v20260421 .
 docker push ghcr.io/shelmus/endsys-coder-workspace:v20260421
 ```
 
-The default `workspace_image` template parameter points at `ghcr.io/shelmus/endsys-coder-workspace:v20260421`. If you publish to a different registry or newer tag, pass that image through the `workspace_image` template parameter when creating or updating workspaces.
+The template pins the workspace image to `ghcr.io/shelmus/endsys-coder-workspace:v20260421`. If you need a different registry or newer tag for a specific workspace, set the optional `workspace_image_override` parameter instead.
 
 ## Push The Coder Template
 
@@ -94,7 +94,7 @@ coder templates push endsys-workspace --directory .
 | Parameter | Description |
 |---|---|
 | `namespace` | Kubernetes namespace for the workspace pod |
-| `workspace_image` | Full container image reference for the workspace pod |
+| `workspace_image_override` | Optional full container image reference for the workspace pod |
 | `home_volume_size` | PVC size in GiB |
 | `cpu_limit` / `memory_limit` | Pod resource limits |
 | `bws_access_token` | Bitwarden machine account access token |
