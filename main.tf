@@ -325,8 +325,9 @@ resource "kubernetes_pod" "workspace" {
     }
 
     container {
-      name  = "dev"
-      image = data.coder_parameter.workspace_image.value
+      name              = "dev"
+      image             = data.coder_parameter.workspace_image.value
+      image_pull_policy = "Always"
 
       command = ["sh", "-c", coder_agent.dev.init_script]
 
